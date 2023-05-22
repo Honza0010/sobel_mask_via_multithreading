@@ -127,18 +127,18 @@ void sobel_mask::edge_detection()	//Zpracování obrázku bez treadù jako celku
 
 void sobel_mask::edge_detection_threads()
 {
-	std::vector<std::vector<cv::Mat>> lines_of_blocks;		//Matice blokù, které pošleme v jednotlivých threadech ke zpracování
+	std::vector<std::vector<cv::Mat>> lines_of_blocks;		//Matice blokù, které pošleme v jednotlivých threadech ke zpracování. Jedna buòka matice je jeden obrázek urèení ke zpracování
 
-	std::vector<cv::Mat> line_of_blocks; //Pomocna promenna
+	std::vector<cv::Mat> line_of_blocks; //Pomocná promìnná, do které budeme ukládat jednotlivé øádky matice a pak to vložíme na konec
 
 	//Rozdìlení do menších obrázkù
-	for (int i = 0; i < (int)(height / block_size_h); i++)
+	for (int i = 0; i < (int)(height / block_size_h); i++)	//Øádkový prùchod
 	{
-		for (int j = 0; j < (int)(width / block_size_w); j++)
+		for (int j = 0; j < (int)(width / block_size_w); j++)	//Sloupcový prùchod
 		{
-			line_of_blocks.push_back(image(cv::Range(i * block_size_h, (i + 1) * block_size_h), cv::Range(j * block_size_w, (j + 1) * block_size_w)));
+			line_of_blocks.push_back(image(cv::Range(i * block_size_h, (i + 1) * block_size_h), cv::Range(j * block_size_w, (j + 1) * block_size_w)));		//Do øádku vždy vkládáme èásti obrázku ležící vedle sebe
 		}
-		if (width % block_size_w != 0)
+		if (width % block_size_w != 0)	//Pokud šíøka není dìlitelná šíøkou bloku, tak zùstane nìjaká zbytková èást, kterou musíme vložit také do vektoru
 		{
 			line_of_blocks.push_back(image(cv::Range(i * block_size_h, (i + 1) * block_size_h), cv::Range((int)(width / block_size_w) * block_size_w, width)));
 		}
@@ -147,13 +147,13 @@ void sobel_mask::edge_detection_threads()
 		line_of_blocks.clear();
 	}
 
-	if (height % block_size_h != 0)
+	if (height % block_size_h != 0)	//Pokud výška není dìlitená výškou bloku, musíme vložit také zbytkový øádek, který bude mít menší výšku
 	{
 		for (int j = 0; j < (int)(width / block_size_w); j++)
 		{
 			line_of_blocks.push_back(image(cv::Range((int)(height / block_size_h) * block_size_h, height), cv::Range(j * block_size_w, (j + 1) * block_size_w)));
 		}
-		if (width % block_size_w != 0)
+		if (width % block_size_w != 0)	//Opìt kontrola, zda není nìjaký zbytkový sloupec
 		{
 			line_of_blocks.push_back(image(cv::Range((int)(height / block_size_h) * block_size_h, height), cv::Range((int)(width / block_size_w) * block_size_w, width)));
 		}
@@ -188,14 +188,14 @@ void sobel_mask::edge_detection_threads()
 		rows_of_edges[i].push_back(lines_of_blocks[i][0]);
 		for (int j = 1; j < lines_of_blocks[i].size(); j++)
 		{
-			cv::hconcat(rows_of_edges[i], lines_of_blocks[i][j], rows_of_edges[i]);
+			cv::hconcat(rows_of_edges[i], lines_of_blocks[i][j], rows_of_edges[i]);		//Spojování øádkových obrázkù do jednoho pomocí funkce hconcat
 		}
 	}
 
 	//Závìreèný spojení do pùvodní velikosti
 	for (int i = 0; i < rows_of_edges.size(); i++)
 	{
-		img_edges.push_back(rows_of_edges[i]);
+		img_edges.push_back(rows_of_edges[i]);		//Spojování obrázkù do sloupce pomocí cv::Mat.push_back
 	}
 
 }
