@@ -13,14 +13,14 @@
 class sobel_mask
 {
 private:
-	size_t width;
-	size_t height;
+	size_t width;		//šíøka obrázku
+	size_t height;		//výška obrázku
 
-	size_t block_size_w;
-	size_t block_size_h;
+	size_t block_size_w;	//šíøka dílèího bloku
+	size_t block_size_h;	//výška dílèího bloku
 
-	cv::Mat image;
-	cv::Mat img_edges;
+	cv::Mat image;		//Obrázek
+	cv::Mat img_edges;	//Obrázek hran po detekci
 
 public:
 	sobel_mask(const std::string& filename, size_t block_size_h, size_t block_size_w);
@@ -34,6 +34,8 @@ public:
 
 private:
 	void edge_detection_in_one_piece(cv::Mat& src);
+
+	void resize_image(int new_width, int new_height);		//Tato funkce se volá v pøípadì, že obrázek je moc velký a nelze jej zobrazit celý
 };
 
 
@@ -41,7 +43,7 @@ sobel_mask::sobel_mask(const std::string& filename, size_t block_size_h, size_t 
 {
 	image = cv::imread(filename);
 
-	if (image.empty())
+	if (image.empty())	//Jestliže se nenaèetl žádný obrázek
 	{
 		throw std::invalid_argument("There is no such file");
 	}
@@ -49,20 +51,36 @@ sobel_mask::sobel_mask(const std::string& filename, size_t block_size_h, size_t 
 	width = image.size().width;
 	height = image.size().height;
 
-	if (block_size_w > width || block_size_h > height)
+	if (block_size_w > width || block_size_h > height)	//Byla zadána velikost dílèího bloku vìtší než samotný obrázek
 	{
 		throw std::out_of_range("The given size of block is bigger than both width and height of the image");
 	}
 
 	this->block_size_h = block_size_h;
 	this->block_size_w = block_size_w;
+
+
+	if (width > 600)	//Pøevedení na zobrazitelnou velikost
+	{
+		double h = (double)(600.0 / width);	//Koeficient pro zachování pomìru obrázku
+		resize_image(600, (int)(h * height));
+		this->block_size_h = h*block_size_h;
+		this->block_size_w = h*block_size_w;
+	}
+	if (height > 600)	//Pøevedení na zobrazitelnou velikost
+	{
+		double w = (double)(600.0 / height);	//Koeficient pro zachování pomìru obrázku	
+		resize_image((int)(w * width), 600);
+		this->block_size_h = w * block_size_h;
+		this->block_size_w = w * block_size_w;
+	}
 }
 
 sobel_mask::sobel_mask(const std::string& filename)
 {
 	image = cv::imread(filename);
 
-	if (image.empty())
+	if (image.empty())	//Jestliže se nenaèetl žádný obrázek
 	{
 		throw std::invalid_argument("There is no such file");
 	}
@@ -70,12 +88,24 @@ sobel_mask::sobel_mask(const std::string& filename)
 	width = image.size().width;
 	height = image.size().height;
 
+
+	if (width > 600)	//Pøevedení na zobrazitelnou velikost
+	{
+		double h = (double)(600.0 / width)*height;
+		resize_image(600, (int)h);
+	}
+	if (height > 600)	//Pøevedení na zobrazitelnou velikost
+	{
+		double w = (double)(600.0 / height) * width;
+		resize_image((int)w, 600);
+	}
+
 	this->block_size_h = height/3;
 	this->block_size_w = width/3;
 }
 
 
-void sobel_mask::edge_detection()
+void sobel_mask::edge_detection()	//Zpracování obrázku bez treadù jako celku
 {
 	cv::GaussianBlur(image, img_edges, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
 
@@ -100,6 +130,8 @@ void sobel_mask::edge_detection_threads()
 	std::vector<std::vector<cv::Mat>> lines_of_blocks;		//Matice blokù, které pošleme v jednotlivých threadech ke zpracování
 
 	std::vector<cv::Mat> line_of_blocks; //Pomocna promenna
+
+	//Rozdìlení do menších obrázkù
 	for (int i = 0; i < (int)(height / block_size_h); i++)
 	{
 		for (int j = 0; j < (int)(width / block_size_w); j++)
@@ -130,7 +162,7 @@ void sobel_mask::edge_detection_threads()
 	}
 
 	line_of_blocks.clear();
-
+	//Konec rozdìlení
 
 	//Thready pro zpracovani jednotlivych dilku obrazku
 	std::vector<std::thread> threads;
@@ -149,8 +181,7 @@ void sobel_mask::edge_detection_threads()
 
 
 	std::vector<cv::Mat> rows_of_edges;
-
-
+	//Spojení øádkových obrázkù
 	for (int i = 0; i < lines_of_blocks.size(); i++)
 	{
 		rows_of_edges.push_back(cv::Mat());
@@ -161,6 +192,7 @@ void sobel_mask::edge_detection_threads()
 		}
 	}
 
+	//Závìreèný spojení do pùvodní velikosti
 	for (int i = 0; i < rows_of_edges.size(); i++)
 	{
 		img_edges.push_back(rows_of_edges[i]);
@@ -169,7 +201,7 @@ void sobel_mask::edge_detection_threads()
 }
 
 
-void sobel_mask::edge_detection_in_one_piece(cv::Mat& src)
+void sobel_mask::edge_detection_in_one_piece(cv::Mat& src)	//Funkce pro detekci hran v jednom obrázku
 {
 	cv::GaussianBlur(src, src, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
 
@@ -189,9 +221,18 @@ void sobel_mask::edge_detection_in_one_piece(cv::Mat& src)
 }
 
 
-void sobel_mask::print_edges()
+void sobel_mask::print_edges()	//Zobrazení obrázku
 {
 	cv::imshow("Edges", img_edges);
 
-	cv::waitKey(0);
+	cv::waitKey(0);	//Po stisknutí esc ukonèí
+}
+
+
+void sobel_mask::resize_image(int new_width, int new_height)
+{
+	cv::resize(image, image, { new_width, new_height }, 0, 0, cv::INTER_NEAREST);	//Zmìní velikost obrázku na požadovanou šíøku a výšku
+
+	this->width = image.size().width;
+	this->height = image.size().height;
 }
