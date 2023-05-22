@@ -164,7 +164,7 @@ void sobel_mask::edge_detection_threads()
 	line_of_blocks.clear();
 	//Konec rozdìlení
 
-	//Thready pro zpracovani jednotlivych dilku obrazku
+	//Thready pro zpracování jednotlivých dílkù obrázku
 	std::vector<std::thread> threads;
 	for (int i = 0; i < lines_of_blocks.size(); i++)
 	{
