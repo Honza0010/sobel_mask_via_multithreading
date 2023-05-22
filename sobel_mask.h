@@ -179,7 +179,6 @@ void sobel_mask::edge_detection_threads()
 		thread.join();
 	}
 
-
 	std::vector<cv::Mat> rows_of_edges;
 	//Spojení øádkových obrázkù
 	for (int i = 0; i < lines_of_blocks.size(); i++)
@@ -203,21 +202,21 @@ void sobel_mask::edge_detection_threads()
 
 void sobel_mask::edge_detection_in_one_piece(cv::Mat& src)	//Funkce pro detekci hran v jednom obrázku
 {
-	cv::GaussianBlur(src, src, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+	cv::GaussianBlur(src, src, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);		//Oèistí obrázek od šumu
 
-    cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);		//Pøevede obrázek na èernobílý
 
 	cv::Mat grad_x, grad_y;
 
-	cv::Sobel(src, grad_x, CV_8UC1, 1, 0, 5);
+	cv::Sobel(src, grad_x, CV_8UC1, 1, 0, 5);		//Aplikace sobelovy masky ve smìru x
 
-	cv::Sobel(src, grad_y, CV_8UC1, 0, 1, 5);
+	cv::Sobel(src, grad_y, CV_8UC1, 0, 1, 5);		//Aplikace sobelovy masky ve smìru y
 
 	cv::Mat abs_grad_x, abs_grad_y;
 	cv::convertScaleAbs(grad_x, abs_grad_x);
 	cv::convertScaleAbs(grad_y, abs_grad_y);
 
-	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, src);
+	cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, src);		//Spojení hran ze smìrù x a y, seète to prvky abs_grad_x a abs_grad_y oba s váhou 0,5 a uloží do matice src
 }
 
 
