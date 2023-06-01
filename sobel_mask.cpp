@@ -196,3 +196,71 @@ void sobel_mask::resize_image(int new_width, int new_height)
 	this->width = image.size().width;
 	this->height = image.size().height;
 }
+
+
+void sobel_mask::my_edge_detection()
+{
+	cv::Mat1b img;
+
+	cv::cvtColor(image, img, cv::COLOR_BGR2GRAY);		//Pøevedeme naètený image do nové promìnné img v gray_scale
+
+	cv::Mat1s sx, sy;	//Filtrované matice ve smìru X a Y
+	my_sobel(img, sx, 0);
+	my_sobel(img, sy, 1);
+
+	// Edges L1 norm
+	cv::Mat1b edges_L1;
+	absdiff(sx, sy, edges_L1);		//Spojení matic sx a sy èímž vznikne výsledný obraz
+
+	edges_L1.copyTo(img_edges);		//Zkopírujeme do reprezentace hran
+}
+
+void sobel_mask::my_sobel(const cv::Mat1b& src, cv::Mat1s& dst, int direction)
+{
+	cv::Mat1s kernel;
+	int radius = 0;
+
+	// Vytvoøí filtrovací (Sobelovu) matici v daném smìru
+	if (direction == 0)	//Smìr X
+	{
+		// Sobel 3x3 X kernel
+		kernel = (cv::Mat1s(3, 3) << -1, 0, +1, -2, 0, +2, -1, 0, +1);
+		radius = 1;
+	}
+	else
+	{
+		// Sobel 3x3 Y kernel
+		kernel = (cv::Mat1s(3, 3) << -1, -2, -1, 0, 0, 0, +1, +2, +1);
+		radius = 1;
+	}
+
+	// Rozšíøí matici na všech stranách - pøidá dvì øady a dva sloupce nul
+	cv::Mat1b _src;
+	copyMakeBorder(src, _src, radius, radius, radius, radius, cv::BORDER_REFLECT101);
+
+	// Vytvoøí požadovanou výstupovou matici
+	dst.create(src.rows, src.cols);
+
+	
+
+	// Konvoluèní cyklus
+	for (int x = 0; x < dst.rows; x++)
+	{
+		for (int y = 0; y < dst.cols; y++)
+		{
+
+			int temp = 0;
+
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					temp += kernel[i][j] * _src(x + i, y + j);
+				}
+			}
+
+			dst(x, y) = temp;
+
+		}
+	}
+}

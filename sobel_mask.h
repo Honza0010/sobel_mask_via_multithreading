@@ -32,10 +32,15 @@ public:
 
 	void print_edges();
 
+	void my_edge_detection();
+
 private:
 	void edge_detection_in_one_piece(cv::Mat& src);
 
 	void resize_image(int new_width, int new_height);		//Tato funkce se volá v pøípadì, že obrázek je moc velký a nelze jej zobrazit celý
+
+	void my_sobel(const cv::Mat1b& src, cv::Mat1s& dst, int direction);
+
 };
 
 

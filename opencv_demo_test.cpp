@@ -39,6 +39,10 @@ int main()
 
         m.print_edges();
         //unsigned int number_of_CPU_threads = std::thread::hardware_concurrency();
+
+        m.my_edge_detection();
+        m.print_edges();
+
     }
     catch (exception ex)
     {
